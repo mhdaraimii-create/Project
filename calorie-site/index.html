@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="احسب احتياج جسمك اليومي من السعرات وتوزيع البروتين والدهون والكربوهيدرات حسب هدفك.">
+<title>حاسبة السعرات اليومية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column form on the right, live result panel beside it; stacks on phones */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --fg:#1d2621; --muted:#5d6b63; --line:#d9e0db;
+  --accent:#1f6f5c; --accent-soft:#e2efe9; --warn:#b4541f; --gain:#3b5aa8;
+  --display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121815; --surface:#1a221e; --fg:#e6ece8; --muted:#9aa9a1; --line:#2c3832;
+  --accent:#5cc3a6; --accent-soft:#1d3029; --warn:#e58d5b; --gain:#8ea8ec; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1a221e; --fg:#e6ece8; --muted:#9aa9a1; --line:#2c3832;
+  --accent:#5cc3a6; --accent-soft:#1d3029; --warn:#e58d5b; --gain:#8ea8ec; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;direction:rtl}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:32px 48px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.6rem,4vw,2.2rem);margin:0;text-wrap:balance}
+.lead{color:var(--muted);margin:.4rem 0 1.8rem;max-width:60ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+form{display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:6px}
+label,.lbl{font-weight:600;font-size:.92rem}
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+input[type=number],select{width:100%;font:inherit;font-variant-numeric:tabular-nums;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
+input:focus-visible,select:focus-visible,.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.unit{font-weight:400;color:var(--muted);font-size:.8rem}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{flex:1;min-width:0;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;text-align:center;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-weight:500;font-size:.92rem}
+.seg input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.hint{color:var(--muted);font-size:.82rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:22px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+.eyebrow{font-size:.8rem;letter-spacing:.02em;color:var(--muted);font-weight:600}
+.big{font-family:var(--display);font-size:clamp(2.6rem,7vw,3.6rem);font-weight:700;color:var(--accent);line-height:1.1;font-variant-numeric:tabular-nums}
+.big small{font-size:1rem;color:var(--muted);font-weight:400;margin-inline-start:6px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stat{background:var(--accent-soft);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-family:var(--display);font-size:1.35rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.82rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:start;padding:9px 6px;border-bottom:1px solid var(--line);font-size:.93rem}
+th{font-weight:600;color:var(--muted);font-size:.8rem}
+tr.on td{color:var(--accent);font-weight:600}
+td.n{text-align:end}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block}
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;font-size:.85rem}
+.legend b{display:block;font-variant-numeric:tabular-nums;font-size:1.05rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:5px}
+.c1{background:var(--accent)} .c2{background:var(--warn)} .c3{background:var(--gain)}
+.note{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;margin:0}
+.warn{color:var(--warn);font-weight:600}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>حاسبة احتياج جسمك من السعرات</h1>
+  <p class="lead">أدخل بياناتك وتتحدّث النتيجة مباشرة. الحساب بمعادلة ميفلين-سانت جيور، وهي الأدق للبالغين. القيم الموجودة الآن مثال فقط، غيّرها لبياناتك.</p>
+
+  <div class="grid">
+    <form id="f" novalidate>
+      <div class="field">
+        <span class="lbl">الجنس</span>
+        <div class="seg">
+          <label><input type="radio" name="sex" id="sex-m" value="m" checked><span>ذكر</span></label>
+          <label><input type="radio" name="sex" id="sex-f" value="f"><span>أنثى</span></label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label for="age">العمر <span class="unit">سنة</span></label><input id="age" type="number" min="15" max="90" value="28" inputmode="numeric"></div>
+        <div class="field"><label for="h">الطول <span class="unit">سم</span></label><input id="h" type="number" min="120" max="230" value="175" inputmode="decimal"></div>
+        <div class="field"><label for="w">الوزن <span class="unit">كغ</span></label><input id="w" type="number" min="30" max="300" value="80" inputmode="decimal"></div>
+      </div>
+
+      <div class="field">
+        <label for="act">مستوى النشاط</label>
+        <select id="act">
+          <option value="1.2">خامل: عمل مكتبي بدون رياضة</option>
+          <option value="1.375" selected>خفيف: رياضة ١–٣ أيام بالأسبوع</option>
+          <option value="1.55">متوسط: رياضة ٣–٥ أيام بالأسبوع</option>
+          <option value="1.725">عالي: رياضة ٦–٧ أيام بالأسبوع</option>
+          <option value="1.9">عالي جداً: عمل بدني شاق أو تمرين مرتين يومياً</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <span class="lbl">هدفك</span>
+        <div class="seg">
+          <label><input type="radio" name="goal" id="g-lose" value="-500" checked><span>تنزيل وزن</span></label>
+          <label><input type="radio" name="goal" id="g-keep" value="0"><span>ثبات</span></label>
+          <label><input type="radio" name="goal" id="g-gain" value="300"><span>زيادة عضل</span></label>
+        </div>
+        <span class="hint">تنزيل الوزن = عجز ٥٠٠ سعرة (حوالي نصف كيلو بالأسبوع). الزيادة = فائض ٣٠٠ سعرة.</span>
+      </div>
+    </form>
+
+    <section class="panel" aria-live="polite">
+      <div>
+        <div class="eyebrow">سعراتك اليومية لهدفك</div>
+        <div class="big"><span id="target">0</span><small>سعرة/يوم</small></div>
+        <div id="floor" class="hint"></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b id="bmr">0</b><span>معدل الحرق الأساسي (BMR): ما يحرقه جسمك وأنت مرتاح</span></div>
+        <div class="stat"><b id="tdee">0</b><span>إجمالي الحرق اليومي (TDEE): مع نشاطك، وهو سعرات الثبات</span></div>
+      </div>
+
+      <div>
+        <div class="eyebrow">توزيع المغذيات المقترح</div>
+        <div class="bar" aria-hidden="true"><i id="bp" class="c1"></i><i id="bf" class="c2"></i><i id="bc" class="c3"></i></div>
+        <div class="legend">
+          <div><span class="dot c1"></span>بروتين<b id="p">0 غ</b></div>
+          <div><span class="dot c2"></span>دهون<b id="fat">0 غ</b></div>
+          <div><span class="dot c3"></span>كربوهيدرات<b id="c">0 غ</b></div>
+        </div>
+        <div class="hint" style="margin-top:6px">البروتين ٢ غ لكل كغ من وزنك، والدهون ٢٥٪ من السعرات، والباقي كربوهيدرات.</div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>الهدف</th><th class="n" style="text-align:end">سعرة/يوم</th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+
+      <p class="note">هذه أرقام تقديرية. راقب وزنك أسبوعين وعدّل ١٠٠–٢٠٠ سعرة حسب النتيجة. إذا عندك حالة صحية أو حمل، استشر طبيب أو أخصائي تغذية.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('ar-EG');
+function calc(){
+  const sex=document.querySelector('input[name=sex]:checked').value;
+  const age=+$('age').value, h=+$('h').value, w=+$('w').value, act=+$('act').value;
+  const goal=+document.querySelector('input[name=goal]:checked').value;
+  if(!(age>0&&h>0&&w>0)) return;
+  const bmr=10*w+6.25*h-5*age+(sex==='m'?5:-161);
+  const tdee=bmr*act;
+  const minCal=sex==='m'?1500:1200;
+  let target=tdee+goal, clipped=false;
+  if(target<minCal){target=minCal;clipped=true}
+  $('bmr').textContent=fmt(bmr);
+  $('tdee').textContent=fmt(tdee);
+  $('target').textContent=fmt(target);
+  $('floor').innerHTML=clipped?'<span class="warn">رفعنا الرقم للحد الأدنى الآمن ('+fmt(minCal)+' سعرة).</span>':'';
+  const pG=2*w, fatG=target*.25/9;
+  let cG=(target-pG*4-fatG*9)/4; if(cG<0)cG=0;
+  const tot=pG*4+fatG*9+cG*4;
+  $('p').textContent=fmt(pG)+' غ'; $('fat').textContent=fmt(fatG)+' غ'; $('c').textContent=fmt(cG)+' غ';
+  $('bp').style.width=(pG*4/tot*100)+'%'; $('bf').style.width=(fatG*9/tot*100)+'%'; $('bc').style.width=(cG*4/tot*100)+'%';
+  const rows=[['تنزيل سريع (حوالي ١ كغ/أسبوع)',-1000],['تنزيل وزن (حوالي ½ كغ/أسبوع)',-500],['تنزيل خفيف (حوالي ¼ كغ/أسبوع)',-250],['ثبات الوزن',0],['زيادة عضل',300]];
+  $('tb').innerHTML=rows.map(([n,d])=>{const v=Math.max(tdee+d,minCal);return '<tr class="'+(d===goal?'on':'')+'"><td>'+n+'</td><td class="n">'+fmt(v)+'</td></tr>'}).join('');
+}
+document.getElementById('f').addEventListener('input',calc);
+document.getElementById('f').addEventListener('change',calc);
+document.getElementById('f').addEventListener('submit',e=>e.preventDefault());
+calc();
+</script>
+</body>
+</html>
