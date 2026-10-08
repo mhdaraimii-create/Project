@@ -26,13 +26,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "..", "assets", "ATS_Template.docx")
 
 GREY = "595959"
-LABEL_GREY = "808080"
 LINK_BLUE = "1155CC"
 BODY = 21  # half-points = 10.5pt
-
-MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006"
-WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-
 
 # ---------------------------------------------------------------- xml helpers
 def el(tag, **attrs):
@@ -42,7 +37,7 @@ def el(tag, **attrs):
     return e
 
 
-def rpr(bold=False, italic=False, underline=False, color=None, size=BODY,
+def rpr(bold=False, italic=False, underline=False, color="000000", size=BODY,
         style=None):
     r = el("w:rPr")
     if style:
@@ -110,6 +105,35 @@ def bold_split(text, **fmt):
 
 
 # ---------------------------------------------------------------- builder
+LINE = 276      # 1.15 line spacing
+BLACK = "000000"
+
+
+def ppr_insert(p, elem, before=("w:shd", "w:tabs", "w:spacing", "w:ind",
+                                "w:jc", "w:rPr")):
+    """Insert a pPr child respecting the schema order."""
+    ppr = p.find(qn("w:pPr"))
+    old = ppr.find(elem.tag)
+    if old is not None:
+        ppr.remove(old)
+    for tag in before:
+        anchor = ppr.find(qn(tag))
+        if anchor is not None:
+            anchor.addprevious(elem)
+            return
+    ppr.append(elem)
+
+
+def set_jc(p, val):
+    ppr_insert(p, el("w:jc", **{"w:val": val}), before=("w:rPr",))
+
+
+def keep_next(p):
+    ppr = p.find(qn("w:pPr"))
+    if ppr.find(qn("w:keepNext")) is None:
+        ppr.insert(0, el("w:keepNext"))
+
+
 class CVBuilder:
     def __init__(self):
         self.doc = Document(TEMPLATE)
@@ -123,33 +147,26 @@ class CVBuilder:
                     return i
             raise SystemExit("Template changed: prototype paragraph not found")
 
-        has_line = lambda t, p: p.find(".//" + qn("w:drawing")) is not None
         i_name = find(lambda t, p: "TYPE THE NAME" in t)
         i_contact = find(lambda t, p: t.startswith("Phone:"))
         i_head = find(lambda t, p: t.strip() == "PROFILE SUMMARY")
-        i_line = find(has_line)
         i_summary = find(lambda t, p: t.startswith("Add a summary"))
         i_label = find(lambda t, p: t.startswith("Title of the Skills"))
         i_skills = find(lambda t, p: t.startswith("Skills name"))
-        i_job1 = find(lambda t, p: t.startswith("Position Title"))
+        i_job = find(lambda t, p: t.startswith("Position Title"))
         i_overview = find(lambda t, p: t.startswith("Write details"))
         i_bullet = find(lambda t, p: p.find(".//" + qn("w:numPr")) is not None)
-        i_job2 = find(lambda t, p: t.startswith("Position Title"), i_job1 + 1)
         i_edu1 = find(lambda t, p: t.startswith("DEGREE TYPE"))
         i_edu2 = find(lambda t, p: t.startswith("Name of the University"))
         i_item = find(lambda t, p: t.startswith("Certificate or Training"))
         i_lang = find(lambda t, p: t.startswith("Arabic:"))
 
         self.proto = {k: copy.deepcopy(paras[i]) for k, i in dict(
-            name=i_name, contact=i_contact, heading=i_head, line=i_line,
-            summary=i_summary, label=i_label, skills=i_skills,
-            job_first=i_job1, job_next=i_job2, overview=i_overview,
+            name=i_name, contact=i_contact, heading=i_head, summary=i_summary,
+            label=i_label, skills=i_skills, job=i_job, overview=i_overview,
             bullet=i_bullet, edu1=i_edu1, edu2=i_edu2, item=i_item,
             lang=i_lang).items()}
-
-        # Drop the legacy VML fallback of the heading line (duplicate ids).
-        for fb in self.proto["line"].iter("{%s}Fallback" % MC_NS):
-            fb.getparent().remove(fb)
+        self._bullet_style(self.proto["bullet"])
 
         # Clear the template body, keep only the section properties.
         self.sect = body.find(qn("w:sectPr"))
@@ -159,17 +176,41 @@ class CVBuilder:
         mar = self.sect.find(qn("w:pgMar"))
         if mar is not None:
             mar.set(qn("w:bottom"), "720")  # 0.5" (template had 0.14")
-        self.body = body
-        self.shape_id = 5000
+
+    def _bullet_style(self, bullet_p):
+        """Small round Symbol bullet, 0.19" in, text at 0.49"."""
+        num_id = bullet_p.find(".//" + qn("w:numId")).get(qn("w:val"))
+        numbering = self.doc.part.numbering_part.element
+        num = [n for n in numbering.findall(qn("w:num"))
+               if n.get(qn("w:numId")) == num_id][0]
+        abs_id = num.find(qn("w:abstractNumId")).get(qn("w:val"))
+        absn = [a for a in numbering.findall(qn("w:abstractNum"))
+                if a.get(qn("w:abstractNumId")) == abs_id][0]
+        lvl = [l for l in absn.findall(qn("w:lvl"))
+               if l.get(qn("w:ilvl")) == "0"][0]
+        lvl.find(qn("w:lvlText")).set(qn("w:val"), "")
+        ind = lvl.find(qn("w:pPr")).find(qn("w:ind"))
+        ind.set(qn("w:left"), "700")
+        ind.set(qn("w:hanging"), "420")
+        r = lvl.find(qn("w:rPr"))
+        for child in list(r):
+            r.remove(child)
+        r.append(el("w:rFonts", **{"w:ascii": "Symbol", "w:hAnsi": "Symbol",
+                                   "w:hint": "default"}))
+        r.append(el("w:color", **{"w:val": BLACK}))
+        r.append(el("w:sz", **{"w:val": 20}))
+        r.append(el("w:szCs", **{"w:val": 20}))
 
     # -- paragraph factory
-    def para(self, kind, runs=()):
+    def para(self, kind, runs=(), **spacing):
         p = copy.deepcopy(self.proto[kind])
         for child in list(p):
             if child.tag != qn("w:pPr"):
                 p.remove(child)
         for r in runs:
             p.append(r)
+        if spacing:
+            set_spacing(p, **spacing)
         self.sect.addprevious(p)
         return p
 
@@ -183,11 +224,11 @@ class CVBuilder:
 
     # -- header
     def header(self, name, title, contact):
-        runs = [run(name.upper(), bold=True, size=52)]
+        runs = [run(name.upper(), bold=True, color=BLACK, size=48)]
         if title:
-            runs += [run("|", size=56), run(" ", bold=True, size=40),
+            runs += [run("|", color=BLACK, size=52), run(" ", size=40),
                      run(title.upper(), bold=True, color=GREY, size=24)]
-        self.para("name", runs)
+        self.para("name", runs, before=100, after=0)
 
         parts = []
         phone = contact.get("phone")
@@ -210,47 +251,50 @@ class CVBuilder:
             if i:
                 runs.append(run(" | ", color=GREY))
             # non-breaking space keeps a label on the same line as its value
-            runs += [run(label, bold=True, color=GREY), run("\u00a0", color=GREY), value]
-        self.para("contact", runs)
+            runs += [run(label, color=GREY), run("\u00a0", color=GREY), value]
+        self.para("contact", runs, after=0, line=LINE)
 
     # -- sections
     def heading(self, text):
-        self.para("heading", [run(text.upper(), bold=True, size=26)])
-        p = copy.deepcopy(self.proto["line"])
-        for dp in p.iter("{%s}docPr" % WP_NS):
-            self.shape_id += 1
-            dp.set("id", str(self.shape_id))
-        self.sect.addprevious(p)
+        p = self.para("heading", [run(text.upper(), bold=True, color=BLACK, size=26)],
+                      before=280, after=180)
+        bdr = el("w:pBdr")
+        bdr.append(el("w:bottom", **{"w:val": "single", "w:sz": 8,
+                                     "w:space": 4, "w:color": BLACK}))
+        ppr_insert(p, bdr)
+        keep_next(p)
 
     def summary(self, s):
-        self.para("summary", bold_split(s["text"]))
+        self.para("summary", bold_split(s["text"]), before=0, after=0, line=LINE)
 
     def skills(self, s):
         for gi, g in enumerate(s["groups"]):
             label = g.get("label")
             if label:
-                p = self.para("label", [run(label, bold=True, italic=True,
-                                            underline=True, color=LABEL_GREY)])
-                if gi:
-                    set_spacing(p, before=160)
-            # non-breaking spaces stop a multi-word skill splitting over lines
-            items = [i.strip().replace(" ", "\u00a0") for i in g["items"]]
-            p = self.para("skills", [run(" | ".join(items))])
-            set_spacing(p, before=60 if label else 120, after=0)
+                p = self.para("label", [run(label, bold=True)],
+                              before=240 if gi else 0, after=0, line=LINE)
+                keep_next(p)
+            items = [i.strip() for i in g["items"]]
+            p = self.para("skills", [run(" | ".join(items))],
+                          before=0 if label else (240 if gi else 0), after=0, line=LINE)
+            set_jc(p, "both")
 
     def entries(self, s):
         for i, e in enumerate(s["items"]):
             runs = bold_split(e["title"], bold=True)
             if e.get("date"):
                 runs += [tab_run(bold=True), run(e["date"], bold=True)]
-            p = self.para("job_first" if i == 0 else "job_next", runs)
-            set_spacing(p, after=0)
             lines = ([e["overview"]] if e.get("overview") else []) + e.get("lines", [])
+            has_more = bool(lines or e.get("bullets"))
+            p = self.para("job", runs, before=240 if i else 0,
+                          after=160 if has_more else 0, line=LINE)
+            keep_next(p)
             for j, line in enumerate(lines):
-                p = self.para("overview", bold_split(line))
-                set_spacing(p, after=60 if e.get("bullets") or j < len(lines) - 1 else 0)
+                p = self.para("overview", bold_split(line), before=0, line=LINE,
+                              after=80 if e.get("bullets") or j < len(lines) - 1 else 0)
+                set_jc(p, "both")
             for b in e.get("bullets", []):
-                self.para("bullet", [run(b, color="000000")])
+                self.para("bullet", [run(b)], before=0, after=90, line=LINE)
 
     def education(self, s):
         for i, e in enumerate(s["items"]):
@@ -259,31 +303,40 @@ class CVBuilder:
                 runs.append(run(" | " + e["detail"], bold=True))
             if e.get("date"):
                 runs += [tab_run(bold=True), run(e["date"], bold=True)]
-            p = self.para("edu1", runs)
-            if i:
-                set_spacing(p, before=160)
-            p = self.para("edu2", [run(e["institution"])])
-            set_spacing(p, after=0)
+            p = self.para("edu1", runs, before=200 if i else 0, after=0)
+            if e.get("institution"):
+                keep_next(p)
+                self.para("edu2", [run(e["institution"])], before=0, after=0)
 
     def items(self, s):
         for e in s["items"]:
             if isinstance(e, str):
                 runs = bold_split(e)
             else:
-                name = e["name"].rstrip(",")
-                runs = [run(name + ",", bold=True)]
-                if e.get("details"):
-                    runs.append(run(" " + e["details"]))
-            self.para("item", runs)
+                name = e["name"].strip().rstrip(",")
+                details = (e.get("details") or "").strip()
+                if not details:
+                    runs = [run(name, bold=True)]
+                elif details.startswith("|"):   # "Name | 2024"
+                    runs = [run(name, bold=True), run(" " + details)]
+                else:                           # "Name, Org, City | 2024"
+                    runs = [run(name + ",", bold=True), run(" " + details)]
+            self.para("item", runs, before=0, after=60, line=LINE)
 
     def languages(self, s):
+        langs = [(l["language"].strip().rstrip(":") + ":", " " + l["level"].strip())
+                 for l in s["items"]]
+        if s.get("layout") == "lines":          # one language per line
+            for lang, level in langs:
+                self.para("lang", [run(lang, bold=True), run(level)],
+                          before=0, after=0, line=LINE)
+            return
         runs = []
-        for i, l in enumerate(s["items"]):
+        for i, (lang, level) in enumerate(langs):
             if i:
                 runs.append(run(" | "))
-            runs += [run(l["language"].rstrip(":") + ":", bold=True),
-                     run(" " + l["level"])]
-        self.para("lang", runs)
+            runs += [run(lang, bold=True), run(level)]
+        self.para("lang", runs, before=0, after=0, line=LINE)
 
     def build(self, data):
         self.header(data["name"], data.get("title", ""), data.get("contact", {}))

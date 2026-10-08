@@ -1,6 +1,6 @@
 ---
 name: atscv-word
-description: Builds the client's CV as a Word (.docx) and PDF file in the exact ATS template design (Calibri, centred name header, black line under every heading, tab-aligned dates, ● bullets). Use whenever an approved CV must be turned into Word/PDF files — e.g. the user says "تمام", "اعتمد", "طلعه", "ok go", "حطه في الوورد", or asks for the .docx/.pdf of a CV.
+description: Builds the client's CV as a Word (.docx) and PDF file in the exact ATS template design (Calibri, centred name header, black line under every heading, tab-aligned dates, • bullets). Use whenever an approved CV must be turned into Word/PDF files — e.g. the user says "تمام", "اعتمد", "طلعه", "ok go", "حطه في الوورد", or asks for the .docx/.pdf of a CV.
 ---
 
 # ATS CV → Word & PDF
@@ -70,7 +70,8 @@ a JSON file and run the script.
     ]},
 
     {"type": "items", "heading": "COURSES & CERTIFICATIONS", "items": [
-      {"name": "NEBOSH IGC", "details": "NEBOSH, Muscat | 2022"}
+      {"name": "NEBOSH IGC", "details": "NEBOSH, Muscat | 2022"},
+      {"name": "Certificate in Sewerage Networks", "details": "| 2024"}
     ]},
 
     {"type": "items", "heading": "AWARDS", "items": [
@@ -97,8 +98,8 @@ a JSON file and run the script.
 | `skills` | KEY SKILLS | `groups[]`: `label`, `items[]` |
 | `entries` | PROFESSIONAL EXPERIENCE, ACADEMIC PROJECT, ACTIVITIES / VOLUNTEER WORK, any extra section with dates/duties | `title` (`Job Title \| Company – City`), `date` (optional), `overview` (optional), `lines[]` (optional plain lines), `bullets[]` (optional) |
 | `education` | EDUCATION | `degree`, `detail` (optional, e.g. GPA), `date`, `institution` |
-| `items` | COURSES & CERTIFICATIONS, AWARDS, simple extra sections (MEMBERSHIPS, PUBLICATIONS…) | `name` (printed bold + comma), `details` — or a plain string where `**text**` is bold |
-| `languages` | LANGUAGES | `language`, `level` |
+| `items` | COURSES & CERTIFICATIONS, AWARDS, simple extra sections (MEMBERSHIPS, PUBLICATIONS…) | `name` (bold), `details`. Details starting with `\|` print as `**Name** \| 2024`; otherwise as `**Name,** Org, City \| 2024`. Or a plain string where `**text**` is bold |
+| `languages` | LANGUAGES | `language`, `level`; add `"layout": "lines"` on the section for one language per line (default: all on one line with " \| ") |
 
 ### Rules
 - `heading` is printed in CAPS exactly as given — use the project's heading
@@ -107,5 +108,8 @@ a JSON file and run the script.
   tab. Never put dates inside `title`.
 - Use `–` (en dash) in dates and between company and city, as in the
   approved text.
-- Omit `linkedin` if the client has none; omit `detail` if there is no GPA.
+- Omit `linkedin` if the client has none; omit `detail` if there is no GPA;
+  omit `institution` only if it is truly unknown.
+- Write text exactly as approved (CAPS or Title Case as in the draft) — the
+  script only forces CAPS on the name, target role and section headings.
 - A section with no items is skipped automatically, but leave it out anyway.
