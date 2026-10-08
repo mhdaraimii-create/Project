@@ -1,0 +1,50 @@
+{
+  "name": "Ahmed Salim Al Harthy",
+  "title": "HSE Officer",
+  "contact": {
+    "phone": "+968 9417 7338",
+    "email": "ahmed.harthy@gmail.com",
+    "address": "Muscat, Sultanate of Oman",
+    "linkedin": "linkedin.com/in/ahmed-harthy"
+  },
+  "sections": [
+    {"type": "summary", "heading": "PROFILE SUMMARY",
+     "text": "HSE Officer with 4 years of experience in oil and gas field operations, specializing in risk assessment, permit-to-work systems, and incident investigation. Skilled in conducting site inspections, delivering safety inductions, and ensuring compliance with company and national HSE standards across multi-contractor sites."},
+    {"type": "skills", "heading": "KEY SKILLS", "groups": [
+      {"label": "Technical Skills:", "items": ["Risk Assessment", "Permit to Work", "Incident Investigation", "Site Inspections", "HSE Audits", "Toolbox Talks", "Hazard Identification", "Emergency Response", "PPE Compliance", "HSE Reporting", "Contractor Safety Management", "Root Cause Analysis"]},
+      {"label": "Soft Skills:", "items": ["Communication", "Team Coordination", "Attention to Detail", "Problem Solving", "Time Management", "Training Delivery", "Report Writing"]}
+    ]},
+    {"type": "entries", "heading": "PROFESSIONAL EXPERIENCE", "items": [
+      {"title": "HSE Officer | Petroleum Development Oman – Fahud", "date": "March 2022 – Present",
+       "overview": "HSE Officer supporting drilling and production operations across multi-contractor field sites.",
+       "bullets": [
+         "Conduct daily site inspections to identify hazards and ensure compliance with PDO HSE standards and procedures.",
+         "Review and approve permit-to-work applications, verifying isolations and control measures before work begins.",
+         "Lead incident investigations and root cause analysis, recommending corrective actions to prevent recurrence.",
+         "Deliver safety inductions and toolbox talks to contractor crews on job-specific risks and controls.",
+         "Prepare weekly HSE performance reports and track closure of audit findings with site supervisors."]},
+      {"title": "HSE Trainee | Oman LNG – Sur", "date": "January 2021 – February 2022",
+       "overview": "Trainee within the HSE department supporting plant safety programmes.",
+       "bullets": [
+         "Assisted HSE officers with workplace inspections and documentation of unsafe acts and conditions.",
+         "Supported emergency drills and maintained records of participation and lessons learned.",
+         "Prepared HSE statistics and presentations for monthly safety committee meetings.",
+         "Participated in risk assessments for routine maintenance and shutdown activities."]}
+    ]},
+    {"type": "education", "heading": "EDUCATION", "items": [
+      {"degree": "BACHELOR OF ENGINEERING IN CHEMICAL ENGINEERING", "detail": "CGPA: 3.12/4.00", "date": "2016 – 2020",
+       "institution": "SULTAN QABOOS UNIVERSITY, MUSCAT, OMAN"}
+    ]},
+    {"type": "items", "heading": "COURSES & CERTIFICATIONS", "items": [
+      {"name": "NEBOSH International General Certificate", "details": "NEBOSH, Muscat | 2022"},
+      {"name": "H2S Gas Awareness", "details": "PDO Training Centre | 2021"}
+    ]},
+    {"type": "entries", "heading": "ACTIVITIES / VOLUNTEER WORK", "items": [
+      {"title": "Volunteer | Oman Red Crescent Society – Muscat", "date": "2019 – 2020",
+       "bullets": ["Supported first aid awareness campaigns and community health events."]}
+    ]},
+    {"type": "languages", "heading": "LANGUAGES", "items": [
+      {"language": "Arabic", "level": "Native"}, {"language": "English", "level": "Fluent"}
+    ]}
+  ]
+}
